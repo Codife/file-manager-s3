@@ -2,13 +2,23 @@ var express = require("express");
 var router = express.Router();
 var Folder = require("../models/folderSchema");
 
+const AWS = require("aws-sdk");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+
+AWS.config.update({
+  accessKeyId: "YOUR_ACCESS_KEY",
+  secretAccessKey: "YOUR_SECRET_ACCESS_KEY",
+  region: "YOUR_AWS_REGION",
+});
+
 router.get("/", function (req, res, next) {
   res.send("working");
 });
 
 router.post("/create-folder", async function (req, res, next) {
   const body = req.body;
-  
+
   try {
     let folder = await Folder.findOne({});
     let alreadyExists = [];
