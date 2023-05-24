@@ -1,0 +1,58 @@
+// "DUMMY REQ FOR CRAETE FOLDER"
+{
+    "folder1": {
+        "type": "FOLDER",
+        "file1": {
+            "type": "FILE",
+            "URL": "https://test.com"
+        }
+    },
+    "folder2": {
+        "type": "FOLDER",
+        "folder3": {
+            "type": "FOLDER",
+            "file2": {
+            "type": "FILE",
+            "URL": "https://test2.com"
+            }
+        }
+    },
+    "file3": {
+        "type": "FILE",
+        "URL": "https://test3.com"
+    }
+}
+
+import React, { useState } from 'react';
+import axios from 'axios';
+
+const FileUpload = () => {
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const handleFileChange = (event) => {
+    setSelectedFile(event.target.files[0]);
+  };
+
+  const handleFileUpload = () => {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    axios
+      .post('http://localhost:3000/upload', formData)
+      .then((response) => {
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
+
+  return (
+    <div>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleFileUpload}>Upload</button>
+    </div>
+  );
+};
+
+export default FileUpload;

@@ -1,19 +1,16 @@
 var express = require("express");
 var router = express.Router();
 var Folder = require("../models/folderSchema");
+const { upload } = require("../middlewares/uplaodFile");
 
-const AWS = require("aws-sdk");
-const multer = require("multer");
-const multerS3 = require("multer-s3");
-
-AWS.config.update({
-  accessKeyId: "YOUR_ACCESS_KEY",
-  secretAccessKey: "YOUR_SECRET_ACCESS_KEY",
-  region: "YOUR_AWS_REGION",
-});
-
-router.get("/", function (req, res, next) {
-  res.send("working");
+router.get("/get-files", async function (req, res, next) {
+  try {
+    let folder = await Folder.findOne({});
+    res.send({ message: "working", data: folder.data });
+  } catch (error) {
+    console.log(error);
+    res.send({ message: "not working" });
+  }
 });
 
 router.post("/create-folder", async function (req, res, next) {
@@ -49,8 +46,35 @@ router.post("/create-folder", async function (req, res, next) {
   }
 });
 
-router.post("/uplaod-file", function (req, res, next) {
-  res.send("working");
+router.delete("/delete-files", async function (req, res, next) {
+  const { name } = req.body;
+  try {
+    let folder = await Folder.findOne({});
+    const deleteKey = (obj, keyToDelete) => {
+      for (const key in obj) {
+        if (key === keyToDelete) {
+          delete obj[key];
+        } else if (typeof obj[key] === "object") {
+          deleteKey(obj[key], name);
+        }
+      }
+    };
+    deleteKey(folder.data, name);
+    await folder.save();
+    res.send({ message: "Deleted the key", data: folder.data });
+  } catch (error) {
+    console.log(error);
+    res.send({ message: "not working" });
+  }
+});
+
+router.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) res.status(400).json({ error: "No file were uploaded." });
+
+  res.status(200).json({
+    message: "Successfully uploaded ",
+    files: req.file,
+  });
 });
 
 module.exports = router;
