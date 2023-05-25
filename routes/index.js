@@ -3,10 +3,29 @@ var router = express.Router();
 var Folder = require("../models/folderSchema");
 const { upload } = require("../middlewares/uplaodFile");
 
+const aws = require("aws-sdk");
+const s3 = new aws.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_DEFAULT_REGION,
+});
+
+const deleteFile = (key) => {
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET,
+    Key: `zeniva/${key}`,
+  };
+  s3.deleteObject(params, (err, data) => {
+    if (err) {
+      console.error(err);
+    }
+  });
+};
+
 router.get("/get-files", async function (req, res, next) {
   try {
     let folder = await Folder.findOne({});
-    res.send({ message: "working", data: folder.data });
+    res.send({ message: "working", data: folder?.data ?? [] });
   } catch (error) {
     console.log(error);
     res.send({ message: "not working" });
@@ -46,13 +65,24 @@ router.post("/create-folder", async function (req, res, next) {
   }
 });
 
-router.delete("/delete-files", async function (req, res, next) {
+router.post("/delete-files", async function (req, res, next) {
   const { name } = req.body;
   try {
     let folder = await Folder.findOne({});
+    const deleteFilesInObj = (obj) => {
+      for (const key in obj) {
+        if (obj[key].type === "FILE") {
+          deleteFile(key);
+        } else if (typeof obj[key] === "object") {
+          deleteFilesInObj(obj[key]);
+        }
+      }
+    };
+
     const deleteKey = (obj, keyToDelete) => {
       for (const key in obj) {
         if (key === keyToDelete) {
+          deleteFilesInObj({ [key]: obj[key] });
           delete obj[key];
         } else if (typeof obj[key] === "object") {
           deleteKey(obj[key], name);
@@ -60,8 +90,12 @@ router.delete("/delete-files", async function (req, res, next) {
       }
     };
     deleteKey(folder.data, name);
-    await folder.save();
-    res.send({ message: "Deleted the key", data: folder.data });
+    
+    const udpatedData = folder.data;
+
+    await Folder.findByIdAndUpdate(folder._id, { data: udpatedData });
+
+    res.send({ message: "Deleted the key", data: udpatedData });
   } catch (error) {
     console.log(error);
     res.send({ message: "not working" });
@@ -71,9 +105,30 @@ router.delete("/delete-files", async function (req, res, next) {
 router.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) res.status(400).json({ error: "No file were uploaded." });
 
+  const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${process.env.FOLDER}/${req.file.originalname}`;
+
   res.status(200).json({
     message: "Successfully uploaded ",
-    files: req.file,
+    URL: fileUrl,
+    name: req.file.originalname,
+  });
+});
+
+router.delete("/delete/:filename", (req, res) => {
+  const filename = req.params.filename;
+
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET,
+    Key: `zeniva/${filename}`,
+  };
+
+  s3.deleteObject(params, (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Failed to delete file from S3." });
+    }
+
+    return res.status(200).json({ message: "File deleted from S3." });
   });
 });
 

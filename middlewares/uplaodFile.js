@@ -18,7 +18,7 @@ const upload = multer({
       cb(null, { fieldName: file.fieldname });
     },
     key: (req, file, cb) => {
-      cb(null, "zeniva/" + Date.now().toString() + file.originalname);
+      cb(null, "zeniva/" + file.originalname);
     },
   }),
 });
