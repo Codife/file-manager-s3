@@ -65,6 +65,25 @@ router.post("/create-folder", async function (req, res, next) {
   }
 });
 
+router.post("/update-folder", async function (req, res, next) {
+  const { folderName, files } = req.body;
+
+  try {
+    let folder = await Folder.findOne({});
+
+    if (!folder.data[folderName]) {
+      return res.send({ message: "folder does not exists" });
+    }
+    folder.data[folderName] = { ...folder.data[folderName], files };
+
+    await Folder.findByIdAndUpdate(folder._id, { data: folder.data });
+    res.send({ message: "folder data updated", data: folder });
+  } catch (error) {
+    console.log(error);
+    res.send({ message: "not working" });
+  }
+});
+
 router.post("/delete-files", async function (req, res, next) {
   const { name } = req.body;
   try {
@@ -90,7 +109,7 @@ router.post("/delete-files", async function (req, res, next) {
       }
     };
     deleteKey(folder.data, name);
-    
+
     const udpatedData = folder.data;
 
     await Folder.findByIdAndUpdate(folder._id, { data: udpatedData });
