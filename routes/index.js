@@ -74,7 +74,13 @@ router.post("/update-folder", async function (req, res, next) {
     if (!folder.data[folderName]) {
       return res.send({ message: "folder does not exists" });
     }
-    folder.data[folderName] = { ...folder.data[folderName], files };
+    folder.data[folderName] = {
+      ...folder.data[folderName],
+      files: {
+        ...folder.data[folderName].files,
+        ...files,
+      },
+    };
 
     await Folder.findByIdAndUpdate(folder._id, { data: folder.data });
     res.send({ message: "folder data updated", data: folder });
@@ -124,12 +130,12 @@ router.post("/delete-files", async function (req, res, next) {
 router.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) res.status(400).json({ error: "No file were uploaded." });
 
-  const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${process.env.FOLDER}/${req.file.originalname}`;
+  const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${req.file.key}`;
 
   res.status(200).json({
     message: "Successfully uploaded ",
     URL: fileUrl,
-    name: req.file.originalname,
+    name: req.file.key.split("/")[1],
   });
 });
 
