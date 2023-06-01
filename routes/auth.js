@@ -10,18 +10,20 @@ router.post("/signin", async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
+    console.log(email, password)
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.json({ message: "User not found" });
     }
 
     const result = await bcrypt.compare(password, user.password);
     console.log(result, password, user.password);
     if (!result) {
-      return res.status(401).json({ message: "Incorrect password" });
+      return res.json({ message: "Incorrect password" });
     }
 
     const token = jwt.sign({ userId: user }, process.env.JWT_SECRET);
-    return res.status(200).json({ message: "Sign-in successful", token, user });
+    return res.json({ message: "Sign-in successful", token });
   } catch (error) {
     console.error("Error during sign-in", error);
     return res.status(500).json({ message: "Internal server error" });
