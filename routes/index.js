@@ -24,20 +24,15 @@ const deleteFile = (key) => {
   });
 };
 
-router.get(
-  "/get-files",
-  verifyJWT,
-  checkUserRole("Admin"),
-  async function (req, res, next) {
-    try {
-      let folder = await Folder.findOne({});
-      res.send({ message: "working", data: folder?.data ?? [] });
-    } catch (error) {
-      console.log(error);
-      res.send({ message: "not working" });
-    }
+router.get("/get-files", verifyJWT, async function (req, res, next) {
+  try {
+    let folder = await Folder.findOne({});
+    res.send({ message: "working", data: folder?.data ?? [] });
+  } catch (error) {
+    console.log(error);
+    res.send({ message: "not working" });
   }
-);
+});
 
 router.post(
   "/create-folder",
